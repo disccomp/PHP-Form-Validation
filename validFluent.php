@@ -229,6 +229,9 @@ class ValidFluent
 	    {
 	    $this->currentObj->error = sprintf($default, $params);
 	    }
+	else if (strpos($errorMsg, '%s')) {
+            $this->currentObj->error = sprintf($errorMsg, $params);
+            }
 	else
 	    $this->currentObj->error = $errorMsg;
 	}
@@ -368,29 +371,58 @@ class ValidFluent
 
 
     /**
-     * Ex: ->oneOf('blue:red:green' , 'only blue , red and green permited')
-     * *case insensitive*
-     * @param string $items ex: 'blue:red:green'
-     * @param string $errorMsg
+     * Ex: ->oneOf(array('blue','red','green'), array('errorMsg'=>'only blue, red, or green are permited'))
+     * *case sensitive*
+     *	
+     * $options = array(
+     *   string errorMsg   Message to be displayed to the user when invalid
+     *   string delimiter  Delimiter to be used to when items is a string
+     *   case-sensitive    case-sensitive matching
+     * )
+     *
+     * @param string/array $items ex: 'blue,red,green' or array('blue','red','green')
+     * @param array $options see above
      * @return ValidFluent
      */
-    function oneOf($items, $errorMsg=NULL)
-	{
-	if ($this->isValid && (!empty($this->currentObj->value)))
-	    {
-
-	    $item = explode(':', strtolower($items));
-	    $result = array_intersect($item, array(strtolower($this->currentObj->value)));
-	    $this->isValid = (!empty($result));
-
-	    if (!$this->isValid)
-		{
-		$itemsList = str_replace(':', ' / ', $items);
-		$this->setErrorMsg($errorMsg, self::$error_oneOf, $itemsList);
-		}
-	    }
-	return $this;
-	}
+    function oneOf($items, $options = array())
+    {
+				if(!is_array($options)){
+					$options = array('errorMsg'=>$arg);
+				}
+        //Set default options
+        $options = array_merge(array(
+            'delimiter' => ':',
+            'case-sensitive' => false,
+            'errorMsg' => NULL
+        ), $options);
+        
+        if ($this->isValid && (!empty($this->currentObj->value))) {
+            if (!is_array($items)) {
+                $items = explode($options['delimiter'], $items);
+            }
+            
+            if ($options['case-sensitive']) {
+                $result = array_intersect($items, array(
+                    $this->currentObj->value
+                ));
+            } else {
+                $a = array_map('strtolower', $items);
+                $b = array_map('strtolower', array(
+                    $this->currentObj->value
+                ));
+                
+                $result = array_intersect($a, $b);
+            }
+            $this->isValid = (!empty($result));
+            
+            if (!$this->isValid) {
+                $itemsList = implode($options['delimiter'], $items);
+                
+                $this->setErrorMsg($options['errorMsg'], self::$error_in, $itemsList);
+            }
+        }
+        return $this;
+    }
 
     /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////
