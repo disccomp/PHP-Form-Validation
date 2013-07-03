@@ -418,7 +418,7 @@ class ValidFluent
             if (!$this->isValid) {
                 $itemsList = implode($options['delimiter'], $items);
                 
-                $this->setErrorMsg($options['errorMsg'], self::$error_in, $itemsList);
+                $this->setErrorMsg($options['errorMsg'], self::$error_oneOf, $itemsList);
             }
         }
         return $this;
